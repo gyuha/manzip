@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
   "os"
+  "strconv"
   "io/ioutil"
   "strings"
   "net/http"
@@ -44,35 +45,48 @@ func BookScrape(eid string, title string) error{
     return err
 	}
 
-	// title := (strings.Replace(doc.Find("title").Text(), " - 만화ZIP(MANAZIP)", "", 1))
-	// fmt.Println(title)
-
-  os.Mkdir(title, 0777)
+  size := doc.Find(".document_img").Size()
+  fmt.Print(size)
   doc.Find(".document_img").Each(func(i int, s *goquery.Selection) {
     src := s.AttrOr("src", "")
-    filename := fmt.Sprintf("./%s/%04d.jpg",  title, i)
+    filename := fmt.Sprintf("./%s/%04d.jpg", title, i)
 
     if(strings.Index(src, "http") == -1) {
       src = domain+src
     }
-    fmt.Println("\tDOWNLOAD : "+src)
+    //fmt.Println("\tDOWNLOAD : "+src)
+    fmt.Printf("\r%s - [%d/%d]", title,i+1, size)
     DownloadImage(src, filename)
-    // .Printf("%s\n", s.Attr("src"))
   })
-
+  fmt.Println("");
   return err
 }
 
-func BookArchive(folder string) {
-  os.Chdir("./"+folder)
+func BookArchive(filename string) {
+  os.Chdir("./"+filename)
+
   zip := new(archivex.ZipFile)
-  zip.Create("../"+folder+".zip")
+  zip.Create("../"+filename+".zip")
   zip.AddAll("./", true)
   zip.Close()
   os.Chdir("..")
 }
 
-func BookEpisode(cid string) error {
+func RemoveFolers() {
+  files, _ := ioutil.ReadDir("./")
+  i := 0
+  for _, f := range files {
+    if (f.IsDir()) {
+      i = i + 1
+      os.RemoveAll(f.Name())
+    }
+  }
+  if (i > 0) {
+    RemoveFolers()
+  }
+}
+
+func BookEpisode(cid string, skip int) error {
   doc, err := goquery.NewDocument(domain+"/comics.php?pid=1&cat=1&cid="+cid)
 	if err != nil {
 		log.Fatal(err)
@@ -83,7 +97,10 @@ func BookEpisode(cid string) error {
   os.Mkdir(bookTitle, 07000)
   os.Chdir("./"+bookTitle)
 
+  fmt.Println("TITLE : "+bookTitle)
+  // 분류 별로 찾기
   doc.Find(".episode_tr").Each(func(i int, s *goquery.Selection) {
+    if(i < skip) { return }
     epdID := s.AttrOr("data-episode-id", "")
     titleSelection := s.Find(".toon_title").First()
     bookTitle := titleSelection.Find("span").First().Text()
@@ -93,18 +110,27 @@ func BookEpisode(cid string) error {
     chapter = strings.Replace(chapter, "\r", "", -1)
     chapter = strings.Replace(chapter, "\n", "-", -1)
 
-    fmt.Println(chapter)
+    os.Mkdir("./"+chapter, 0777)
+    // 책 스크랩
     BookScrape(epdID, chapter)
+    // 책 압축
     BookArchive(chapter)
   })
+
+  fmt.Println("\n\r\n\rDelete tmp folders");
+  RemoveFolers()
   os.Chdir("..")
   return err
 }
 
 func main() {
   if( len(os.Args) < 2) {
-    fmt.Println("manzip [Cartoon ID]")
+    fmt.Println("manzip [Cartoon ID] [SKIP COUNT]")
     os.Exit(2)
   }
-  BookEpisode(os.Args[1])
+  skip := 0
+  if( len(os.Args) == 3) {
+    skip, _ = strconv.Atoi(os.Args[2])
+  }
+  BookEpisode(os.Args[1], skip)
 }

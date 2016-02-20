@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"log"
+  "fmt"
+  "log"
   "os"
   "strconv"
   "io/ioutil"
   "strings"
   "net/http"
-	"github.com/PuerkitoBio/goquery"
+  "github.com/PuerkitoBio/goquery"
   "github.com/jhoonb/archivex"
 )
 
@@ -27,8 +27,8 @@ func DownloadImage(strURL string, fileName string) error {
 
   res.Body.Close()
   if err != nil {
-      log.Fatalf("ioutil.ReadAll -> %v", err)
-      return err
+    log.Fatalf("ioutil.ReadAll -> %v", err)
+    return err
   }
 
   res.Body.Close()
@@ -39,11 +39,11 @@ func DownloadImage(strURL string, fileName string) error {
 }
 
 func BookScrape(eid string, title string) error{
-	doc, err := goquery.NewDocument(domain+"/comic_view.php?pid=&cid=1&eid="+eid)
-	if err != nil {
-		log.Fatal(err)
+  doc, err := goquery.NewDocument(domain+"/comic_view.php?pid=&cid=1&eid="+eid)
+  if err != nil {
+    log.Fatal(err)
     return err
-	}
+  }
 
   size := doc.Find(".document_img").Size()
   fmt.Print(size)
@@ -88,10 +88,10 @@ func RemoveFolers() {
 
 func BookEpisode(cid string, skip int) error {
   doc, err := goquery.NewDocument(domain+"/comics.php?pid=1&cat=1&cid="+cid)
-	if err != nil {
-		log.Fatal(err)
+  if err != nil {
+    log.Fatal(err)
     return err
-	}
+  }
 
   bookTitle := doc.Find(".title").First().Text()
   os.Mkdir(bookTitle, 07000)

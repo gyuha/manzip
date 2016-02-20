@@ -83,9 +83,10 @@ func RemoveFolers() {
 			defer os.RemoveAll(f.Name())
 		}
 	}
-	// if i > 0 {
-	// 	RemoveFolers()
-	// }
+	if i > 0 {
+		// 지워지지 않는 경우가 발생해서 재도전
+		RemoveFolers()
+	}
 }
 
 func BookEpisode(cid string, skip int) error {

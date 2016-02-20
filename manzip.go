@@ -80,13 +80,23 @@ func RemoveFolers() {
 	for _, f := range files {
 		if f.IsDir() {
 			i = i + 1
-			defer os.RemoveAll(f.Name())
+			// defer os.RemoveAll(f.Name())
+			os.RemoveAll(f.Name())
 		}
 	}
 	if i > 0 {
 		// 지워지지 않는 경우가 발생해서 재도전
 		RemoveFolers()
 	}
+}
+
+func titleFilter(title string) string {
+	rep := []string{"!", "?", "<", ">", "[", "]"}
+	for _, each := range rep {
+		title = strings.Replace(title, each, "", -1)
+	}
+	title = strings.Trim(title, "\n\r ")
+	return title
 }
 
 func BookEpisode(cid string, skip int) error {
@@ -97,6 +107,7 @@ func BookEpisode(cid string, skip int) error {
 	}
 
 	bookTitle := doc.Find(".title").First().Text()
+	bookTitle = titleFilter(bookTitle)
 	os.Mkdir(bookTitle, 07000)
 	os.Chdir("./" + bookTitle)
 
@@ -106,12 +117,14 @@ func BookEpisode(cid string, skip int) error {
 		if i < skip {
 			return
 		}
+
 		epdID := s.AttrOr("data-episode-id", "")
 		titleSelection := s.Find(".toon_title").First()
 		bookTitle := titleSelection.Find("span").First().Text()
 		chapter := titleSelection.Text()
 		chapter = strings.Replace(chapter, bookTitle, "", -1)
-		chapter = strings.Trim(chapter, "\n\r ")
+		chapter = strings.Trim(chapter, "\n\r\t ")
+		chapter = titleFilter(chapter)
 		chapter = strings.Replace(chapter, "!", "", -1)
 		chapter = strings.Replace(chapter, "?", "", -1)
 		chapter = strings.Replace(chapter, "\r", "", -1)

@@ -18,7 +18,7 @@ const (
 	domain = "https://manazip.com"
 )
 
-func DownloadImage(strURL string, fileName string) error {
+func downloadImage(strURL string, fileName string) error {
 	res, err := http.Get(strURL)
 	if err != nil {
 		log.Fatalf("http.Get -> %v", err)
@@ -40,7 +40,7 @@ func DownloadImage(strURL string, fileName string) error {
 	return err
 }
 
-func BookScrape(eid string, title string) error {
+func bookScrape(eid string, title string) error {
 	doc, err := goquery.NewDocument(domain + "/comic_view.php?pid=&cid=1&eid=" + eid)
 	if err != nil {
 		log.Fatal(err)
@@ -58,13 +58,13 @@ func BookScrape(eid string, title string) error {
 		}
 		//fmt.Println("\tDOWNLOAD : "+src)
 		fmt.Printf("\r%s - [%d/%d]", title, i+1, size)
-		DownloadImage(src, filename)
+		downloadImage(src, filename)
 	})
 	fmt.Println("")
 	return err
 }
 
-func BookArchive(filename string) {
+func bookArchive(filename string) {
 	os.Chdir("./" + filename)
 
 	zip := new(archivex.ZipFile)
@@ -74,7 +74,7 @@ func BookArchive(filename string) {
 	os.Chdir("..")
 }
 
-func RemoveFolers() {
+func removeFolers() {
 	files, _ := ioutil.ReadDir("./")
 	i := 0
 	for _, f := range files {
@@ -86,11 +86,11 @@ func RemoveFolers() {
 	}
 	if i > 0 {
 		// 지워지지 않는 경우가 발생해서 재도전
-		RemoveFolers()
+		removeFolers()
 	}
 }
 
-func TitleFilter(title string) string {
+func titleFilter(title string) string {
 	rep := []string{"!", "?", "<", ">", "[", "]", "\n", "\t", "\r"}
 	for _, each := range rep {
 		title = strings.Replace(title, each, "", -1)
@@ -99,7 +99,7 @@ func TitleFilter(title string) string {
 	return title
 }
 
-func BookEpisode(cid string, skip int) error {
+func bookEpisode(cid string, skip int) error {
 	doc, err := goquery.NewDocument(domain + "/comics.php?pid=1&cat=1&cid=" + cid)
 	if err != nil {
 		log.Fatal(err)
@@ -107,7 +107,7 @@ func BookEpisode(cid string, skip int) error {
 	}
 
 	bookTitle := doc.Find(".title").First().Text()
-	bookTitle = TitleFilter(bookTitle)
+	bookTitle = titleFilter(bookTitle)
 
 	if len(bookTitle) == 0 {
 		return err
@@ -128,25 +128,25 @@ func BookEpisode(cid string, skip int) error {
 		chapter := titleSelection.Text()
 		chapter = strings.Replace(chapter, bookTitle, "", -1)
 		chapter = strings.Trim(chapter, "\n\r\t ")
-		chapter = TitleFilter(chapter)
+		chapter = titleFilter(chapter)
 
 		if len(chapter) == 0 {
 			return
 		}
 		os.Mkdir("./"+chapter, 0777)
 		// 책 스크랩
-		BookScrape(epdID, chapter)
+		bookScrape(epdID, chapter)
 		// 책 압축
-		BookArchive(chapter)
+		bookArchive(chapter)
 	})
 
 	fmt.Println("\n\rDelete tmp folders")
-	RemoveFolers()
+	removeFolers()
 	os.Chdir("..")
 	return err
 }
 
-func FileRead(filename string) error {
+func fileRead(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -162,7 +162,7 @@ func FileRead(filename string) error {
 		}
 		bid := strings.Trim(sps[0], " ")
 		skipCount, _ := strconv.Atoi(skip)
-		BookEpisode(bid, skipCount)
+		bookEpisode(bid, skipCount)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -182,8 +182,8 @@ func main() {
 	}
 	file := os.Args[1]
 	if _, err := os.Stat(file); err != nil {
-		BookEpisode(os.Args[1], skip)
+		bookEpisode(os.Args[1], skip)
 		os.Exit(0)
 	}
-	FileRead(file)
+	fileRead(file)
 }

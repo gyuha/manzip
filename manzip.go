@@ -90,8 +90,8 @@ func RemoveFolers() {
 	}
 }
 
-func titleFilter(title string) string {
-	rep := []string{"!", "?", "<", ">", "[", "]"}
+func TitleFilter(title string) string {
+	rep := []string{"!", "?", "<", ">", "[", "]", "\n", "\t", "\r"}
 	for _, each := range rep {
 		title = strings.Replace(title, each, "", -1)
 	}
@@ -107,7 +107,11 @@ func BookEpisode(cid string, skip int) error {
 	}
 
 	bookTitle := doc.Find(".title").First().Text()
-	bookTitle = titleFilter(bookTitle)
+	bookTitle = TitleFilter(bookTitle)
+
+	if len(bookTitle) == 0 {
+		return err
+	}
 	os.Mkdir(bookTitle, 07000)
 	os.Chdir("./" + bookTitle)
 
@@ -124,12 +128,11 @@ func BookEpisode(cid string, skip int) error {
 		chapter := titleSelection.Text()
 		chapter = strings.Replace(chapter, bookTitle, "", -1)
 		chapter = strings.Trim(chapter, "\n\r\t ")
-		chapter = titleFilter(chapter)
-		chapter = strings.Replace(chapter, "!", "", -1)
-		chapter = strings.Replace(chapter, "?", "", -1)
-		chapter = strings.Replace(chapter, "\r", "", -1)
-		chapter = strings.Replace(chapter, "\n", "-", -1)
+		chapter = TitleFilter(chapter)
 
+		if len(chapter) == 0 {
+			return
+		}
 		os.Mkdir("./"+chapter, 0777)
 		// 책 스크랩
 		BookScrape(epdID, chapter)
@@ -137,7 +140,7 @@ func BookEpisode(cid string, skip int) error {
 		BookArchive(chapter)
 	})
 
-	fmt.Println("\n\r\n\rDelete tmp folders")
+	fmt.Println("\n\rDelete tmp folders")
 	RemoveFolers()
 	os.Chdir("..")
 	return err
